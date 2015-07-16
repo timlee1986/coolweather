@@ -34,7 +34,7 @@
     <application
         android:name="com.timlee1986.coolweather.application.WeatherApplication"
         android:allowBackup="true"
-        android:icon="@drawable/ic_launcher"
+        android:icon="@drawable/cool"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <service
@@ -51,14 +51,37 @@
         <meta-data
             android:name="com.baidu.lbsapi.API_KEY"
             android:value="EuHUwodkIDz7tUijMTPtfsSQ" />
+
         <activity
             android:name="com.timlee1986.coolweather.activity.ChooseAreaActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.timlee1986.coolweather.activity.WeatherActivity"
+            android:label="@string/app_name" >
+        </activity>
+
+        <service android:name="com.timlee1986.coolweather.service.AutoUpdateService" >
+        </service>
+
+        <receiver android:name="com.timlee1986.coolweather.receiver.AutoUpdateReceiver" >
+        </receiver>
+        <receiver android:name="com.timlee1986.coolweather.widget.WeatherWidget" >
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.timlee1986.coolweather.appWidgetUpdate" >
+                </action>
+            </intent-filter>
+
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/weatherwidget" />
+        </receiver>
     </application>
 
 </manifest>

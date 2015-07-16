@@ -10,22 +10,25 @@ import java.util.Map;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
-import com.google.gson.Gson;
 import com.timlee1986.coolweather.R;
 import com.timlee1986.coolweather.application.WeatherApplication;
 import com.timlee1986.coolweather.db.CoolWeatherDB;
 import com.timlee1986.coolweather.helper.JsonHelper;
-import com.timlee1986.coolweather.helper.LogHelper;
 import com.timlee1986.coolweather.model.City;
 import com.timlee1986.coolweather.model.Country;
 import com.timlee1986.coolweather.model.Province;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -49,6 +52,15 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 	private List<String> dataList = new ArrayList<String>();
 	private ArrayAdapter<String> adapter;
 	private WeatherApplication app = null;
+	private String localCity = null;
+	/**
+	 * 选中的省份
+	 */
+	private Province selectedProvince;
+	/**
+	 * 选中的城市
+	 */
+	private City selectedCity;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -61,14 +73,74 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 		adapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1,
 				dataList);
 		listView.setAdapter(adapter);
+		locationView.setOnClickListener(new OnClickListener()
+		{
+
+			@Override
+			public void onClick(View v)
+			{
+				if (localCity != null)
+				{
+					Intent intent = new Intent(ChooseAreaActivity.this,
+							WeatherActivity.class);
+					intent.putExtra("City", localCity);
+					startActivity(intent);
+				}
+			}
+		});
+		listView.setOnItemClickListener(new OnItemClickListener()
+		{
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id)
+			{
+				if (currentLevel == LEVEL_PROVINCE)
+				{
+					selectedProvince = provinceList.get(position);
+					queryCitys(selectedProvince.getId(),
+							selectedProvince.getProvinceName());
+				}
+				else if (currentLevel == LEVEL_CITY)
+				{
+					selectedCity = cityList.get(position);
+					// LogHelper.d("----"+selectedCity.getCityName()+" "+selectedCity.getId());
+					// queryCountries(selectedCity.getId(),
+					// selectedCity.getCityName());
+					Intent intent = new Intent(ChooseAreaActivity.this,
+							WeatherActivity.class);
+					intent.putExtra("City", selectedCity.getCityName());
+					startActivity(intent);
+				}
+				else if (currentLevel == LEVEL_COUNTY)
+				{
+
+				}
+			}
+		});
 		db = CoolWeatherDB.getInstance(this);
 		app = ((WeatherApplication) getApplication());
 		app.setLocationListener(this);
 		queryProvinces();
-		local();
+		locate();
 	}
 
-	private void local()
+	@Override
+	protected void onRestart()
+	{
+		super.onRestart();
+		dataList.clear();
+		for (Province province : provinceList)
+		{
+			dataList.add(province.getProvinceName());
+		}
+		adapter.notifyDataSetChanged();
+		listView.setSelection(0);
+		titleView.setText("中国");
+		currentLevel = LEVEL_PROVINCE;
+	}
+
+	private void locate()
 	{
 		new AsyncTask<Void, Void, Void>()
 		{
@@ -76,12 +148,6 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 			{
 				app.startLocal();
 				return null;
-			}
-
-			@Override
-			protected void onPostExecute(Void result)
-			{
-
 			}
 
 		}.execute();
@@ -123,14 +189,12 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 			titleView.setText(provinceName);
 			currentLevel = LEVEL_CITY;
 		}
-		else
-		{}
 	}
 
 	private void queryCountries(int cityId, String cityName)
 	{
-		provinceList = db.getProvinces();
-		if (provinceList.size() > 0)
+		countryList = db.getCounties(cityId);
+		if (countryList.size() > 0)
 		{
 			dataList.clear();
 			for (Country country : countryList)
@@ -142,20 +206,11 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 			titleView.setText(cityName);
 			currentLevel = LEVEL_COUNTY;
 		}
-		else
-		{}
 	}
 
 	private void loadData()
 	{
 		new Thread(new ReadJsonFileThread()).start();
-	}
-
-	private void saveJsonDataToDataBase(Map<String, List<String>> cityMap)
-	{
-		Map<String, List<String>> list = cityMap;
-		LogHelper.d(cityMap.keySet().size() + "");
-		db.initData(cityMap);
 	}
 
 	private Handler handler = new Handler()
@@ -208,15 +263,34 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 						e.printStackTrace();
 					}
 			}
-			Message message = new Message();
-			message.what = RELOADDATA;
+
 			Map<String, List<String>> obj = JsonHelper.fromJson(
 					stringBuilder.toString(),
 					new HashMap<String, List<String>>().getClass());
-			saveJsonDataToDataBase(obj);
+			Message message = new Message();
+			if (db.initData(obj))
+				message.what = RELOADDATA;
 			handler.sendMessage(message);
 		}
 
+	}
+
+	@Override
+	public void onBackPressed()
+	{
+		if (currentLevel == LEVEL_CITY)
+		{
+			queryProvinces();
+		}
+		else if (currentLevel == LEVEL_COUNTY)
+		{
+			queryCitys(selectedProvince.getId(),
+					selectedProvince.getProvinceName());
+		}
+		else
+		{
+			super.onBackPressed();
+		}
 	}
 
 	@Override
@@ -224,7 +298,8 @@ public class ChooseAreaActivity extends Activity implements BDLocationListener
 	{
 		if (location != null)
 		{
-			locationView.setText(location.getAddrStr());
+			localCity = location.getCity();
+			locationView.setText("您当前所在的城市：" + location.getCity());
 		}
 		app.stopLocal();
 	}

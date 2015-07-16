@@ -11,41 +11,71 @@ public class LogHelper
 	public static final int ERROR = 5;
 	public static final int NOTHING = 6;
 	public static final int LEVEL = VERBOSE;
-	public static String Tag ="coolweather";
+	public static String Tag = "coolweather";
 
 	public static void v(String msg)
 	{
+
 		if (LEVEL <= VERBOSE)
 		{
-			Log.v(Tag, msg);
+			try
+			{
+				Log.v(Tag, msg);
+			}
+			catch (Exception e)
+			{}
 		}
 	}
+
 	public static void d(String msg)
 	{
 		if (LEVEL <= DEBUG)
 		{
-			Log.d(Tag, msg);
+			try
+			{
+				Log.d(Tag, msg);
+			}
+			catch (Exception e)
+			{}
 		}
 	}
-	public static void i( String msg)
+
+	public static void i(String msg)
 	{
 		if (LEVEL <= INFO)
 		{
-			Log.i(Tag, msg);
+			try
+			{
+				Log.i(Tag, msg);
+			}
+			catch (Exception e)
+			{}
 		}
 	}
-	public static void w( String msg)
+
+	public static void w(String msg)
 	{
 		if (LEVEL <= WARN)
 		{
-			Log.w(Tag, msg);
+			try
+			{
+				Log.w(Tag, msg);
+			}
+			catch (Exception e)
+			{}
 		}
 	}
-	public static void e( String msg)
+
+	public static void e(String msg)
 	{
 		if (LEVEL <= ERROR)
 		{
-			Log.e(Tag, msg);
+			try
+			{
+				Log.e(Tag, msg);
+			}
+			catch (Exception e)
+			{}
 		}
 	}
 }

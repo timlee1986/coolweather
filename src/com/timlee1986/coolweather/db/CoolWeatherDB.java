@@ -119,7 +119,7 @@ public class CoolWeatherDB
 						.getColumnIndex("city_code")));
 				city.setCityName(cursor.getString(cursor
 						.getColumnIndex("city_name")));
-				city.setId(cursor.getInt(cursor.getColumnIndex("province_id")));
+				city.setProvinceId(cursor.getInt(cursor.getColumnIndex("province_id")));
 				list.add(city);
 
 			}
@@ -132,7 +132,7 @@ public class CoolWeatherDB
 	public List<Country> getCounties(int cityId)
 	{
 		List<Country> list = new ArrayList<Country>();
-		Cursor cursor = db.query("Country", null, "city_id = ?", new String[]
+		Cursor cursor = db.query("County ", null, "city_id = ?", new String[]
 		{ cityId + "" }, null, null, null);
 		if (cursor.moveToFirst())
 		{
@@ -156,7 +156,7 @@ public class CoolWeatherDB
 	public boolean initData(Map<String, List<String>> cityMap)
 	{
 		String sql = "";
-		int tmp=1;
+		int tmp=0;
 		String tmpkey="";
 		try
 		{
@@ -178,8 +178,9 @@ public class CoolWeatherDB
 					tmpkey = "0_"+i+"_"+j;
 					List<String> countries = cityMap.containsKey("0_"+i+"_"+j)? cityMap.get("0_"+i+"_"+j):null;
 					sql = "Insert into City (city_name,province_id)values('"
-							+ citys.get(j) + "',"+(i)+")";
+							+ citys.get(j) + "',"+(i+1)+")";
 					db.execSQL(sql);
+					tmp++;
 					if(countries==null)continue;
 					for (int k = 0; k < countries.size(); k++)
 					{
@@ -187,7 +188,6 @@ public class CoolWeatherDB
 								+ countries.get(k) + "',"+tmp+")";
 						db.execSQL(sql);
 					}
-					tmp++;
 				}				
 			}
 			db.setTransactionSuccessful();
